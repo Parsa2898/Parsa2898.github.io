@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #header {
+            height: 50px;
+            width: 100%;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        #header span {
+            font-size: 18px;
+            margin-right: 15px;
+        }
+        #symbol {
+            font-weight: bold;
+            color: #333;
+        }
+        #percentage {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        #chart-container {
+            flex: 1;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <span id="symbol">Test/USDT</span>
+        <span id="percentage">+0.00%</span>
+    </div>
+    <div id="chart-container"></div>
+    <script>
+        // ساخت چارت
+        const chartContainer = document.getElementById('chart-container');
+        const chart = LightweightCharts.createChart(chartContainer, {
+            width: chartContainer.offsetWidth,
+            height: chartContainer.offsetHeight,
+            layout: { backgroundColor: '#ffffff', textColor: '#333' },
+            grid: { vertLines: { color: '#eee' }, horzLines: { color: '#eee' } },
+        });
+
+        const candleSeries = chart.addCandlestickSeries();
+
+        // داده‌های اولیه (فیک)
+        const fakeData = [
+            { time: '2024-12-01', open: 0.01, high: 0.01, low: 0.01, close: 0.01 },
+        ];
+
+        candleSeries.setData(fakeData);
+
+        // نمایش درصد رشد در بالای چارت
+        let initialPrice = fakeData[0].close;
+
+        function updatePercentage() {
+            const lastPrice = fakeData[fakeData.length - 1].close;
+            const percentage = ((lastPrice - initialPrice) / initialPrice) * 100;
+            const percentageElement = document.getElementById('percentage');
+            percentageElement.textContent = `${percentage.toFixed(2)}%`;
+
+            percentageElement.style.color = percentage >= 0 ? '#4CAF50' : '#F44336';
+        }
+
+        // تنظیم چرخه 12 ساعته
+        let cycleDuration = 12 * 60 * 60 * 1000; // 12 ساعت به میلی‌ثانیه
+        let startPrice = 0.01; // قیمت ابتدایی
+        let targetPrice = 0.15; // قیمت هدف
+        let isRising = true; // نشان‌دهنده جهت حرکت قیمت
+
+        setInterval(() => {
+            const lastPrice = fakeData[fakeData.length - 1];
+            const currentDate = new Date(new Date(lastPrice.time).getTime() + 86400000).toISOString().split('T')[0];
+
+            let nextPrice;
+
+            if (isRising) {
+                nextPrice = {
+                    time: currentDate,
+                    open: lastPrice.close,
+                    high: Math.min(lastPrice.close + Math.random() * 0.01, targetPrice), // افزایش
+                    low: lastPrice.close,
+                    close: Math.min(lastPrice.close + Math.random() * 0.01, targetPrice),
+                };
+
+                if (nextPrice.close >= targetPrice) {
+                    isRising = false; // تغییر جهت به نزولی
+                }
+            } else {
+                nextPrice = {
+                    time: currentDate,
+                    open: lastPrice.close,
+                    high: lastPrice.close,
+                    low: Math.max(lastPrice.close - Math.random() * 0.01, startPrice), // کاهش
+                    close: Math.max(lastPrice.close - Math.random() * 0.01, startPrice),
+                };
+
+                if (nextPrice.close <= startPrice) {
+                    isRising = true; // تغییر جهت به صعودی
+                }
+            }
+
+            fakeData.push(nextPrice);
+            candleSeries.update(nextPrice);
+            updatePercentage(); // بروزرسانی درصد رشد
+        }, cycleDuration / 24); // هر یک ساعت (برای تست، می‌توانید مقدار زمان را کاهش دهید)
+    </script>
+</body>
+</html>
